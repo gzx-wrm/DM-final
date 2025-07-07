@@ -13,3 +13,5 @@ previous
 poutcome_encoded
 contact_efficiency
 first_contact
+balance_group_encoded
+duration_group_encoded
