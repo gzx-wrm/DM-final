@@ -1,0 +1,15 @@
+age
+job_encoded
+marital_encoded
+education_encoded
+default_encoded
+balance
+housing_encoded
+loan_encoded
+contact_encoded
+duration
+campaign
+previous
+poutcome_encoded
+contact_efficiency
+first_contact
