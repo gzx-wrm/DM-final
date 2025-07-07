@@ -465,9 +465,26 @@ class BankDataPreprocessor:
         self._data_encode()
         # 采样
         self._data_sampling()
+
+        X, y = self.prepare_features(use_onehot=False, scale_features=True)
+        # 特征缩放
+        print("进行特征缩放...")
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+        self.scaler = StandardScaler()
+        X_train = self.scaler.fit_transform(X_train)
+        X_test = self.scaler.transform(X_test)
+        X_train = pd.DataFrame(X_train, columns=self.feature_names)
+        X_test = pd.DataFrame(X_test, columns=self.feature_names)
+
+        print(f"训练集形状: {X_train.shape}")
+        print(f"测试集形状: {X_test.shape}")
+        print(f"训练集订阅率: {y_train.mean():.3f}")
+        print(f"测试集订阅率: {y_test.mean():.3f}")
         
         print(f"特征工程完成！最终数据形状: {self.processed_data.shape}")
-        return self.processed_data
+        return self.processed_data, X_train, X_test, y_train, y_test
     
     def prepare_features(self, use_onehot=False, scale_features=True):
         """准备建模特征"""
@@ -515,34 +532,12 @@ class BankDataPreprocessor:
         X = self.processed_data[feature_columns]
         y = self.processed_data['y_encoded']
         
-        # 特征缩放
-        if scale_features:
-            print("进行特征缩放...")
-            self.scaler = StandardScaler()
-            X_scaled = self.scaler.fit_transform(X)
-            X = pd.DataFrame(X_scaled, columns=feature_columns, index=X.index)
-        
         self.feature_names = feature_columns
         
         print(f"最终特征数量: {len(feature_columns)}")
         print(f"特征列表: {feature_columns[:10]}...")  # 显示前10个特征
         
         return X, y
-    
-    def split_data(self, X, y, test_size=0.2, random_state=42):
-        """数据集划分"""
-        print(f"\n划分数据集 (训练集:{1-test_size:.0%}, 测试集:{test_size:.0%})...")
-        
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state, stratify=y
-        )
-        
-        print(f"训练集形状: {X_train.shape}")
-        print(f"测试集形状: {X_test.shape}")
-        print(f"训练集订阅率: {y_train.mean():.3f}")
-        print(f"测试集订阅率: {y_test.mean():.3f}")
-        
-        return X_train, X_test, y_train, y_test
     
     def save_processed_data(self, output_path="processed_bank_data.csv"):
         """保存处理后的数据"""
@@ -639,13 +634,7 @@ def main():
     preprocessor.visualize_data()
     
     # 5. 数据预处理
-    engineered_data = preprocessor.data_preprocessing()
-    
-    # 6. 准备建模特征
-    X, y = preprocessor.prepare_features(use_onehot=False, scale_features=True)
-    
-    # 7. 数据集划分
-    X_train, X_test, y_train, y_test = preprocessor.split_data(X, y)
+    engineered_data, X_train, X_test, y_train, y_test = preprocessor.data_preprocessing()
     
     # 8. 保存处理后的数据
     preprocessor.save_processed_data()
