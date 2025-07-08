@@ -179,7 +179,7 @@ class BankDataPreprocessor:
         plt.savefig('correlation_heatmap.png', dpi=300, bbox_inches='tight')
         plt.show()
     
-    def clean_data(self):
+    def _data_clean(self):
         """数据清洗"""
         if self.data is None:
             print("请先加载数据！")
@@ -523,7 +523,7 @@ class BankDataPreprocessor:
 
     def data_preprocessing(self):
         # 数据清洗
-        self.clean_data()
+        self._data_clean()
 
         # 特征聚合
         self._data_aggregation()
@@ -642,10 +642,10 @@ def main():
     # 5. 数据预处理
     engineered_data, X_train, X_test, y_train, y_test = preprocessor.data_preprocessing()
     
-    # 8. 保存处理后的数据
+    # 6. 保存处理后的数据
     preprocessor.save_processed_data()
     
-    # 9. 生成总结报告
+    # 7. 生成总结报告
     # preprocessor.generate_summary_report()
     
     print("\n" + "="*50)
