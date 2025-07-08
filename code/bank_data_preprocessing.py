@@ -264,10 +264,6 @@ class BankDataPreprocessor:
     def _data_sampling(self):
         pass
 
-    # 选择特征，默认全选
-    def _feature_selection(self):
-        pass
-
     # 特征生成
     def _feature_generation(self):
         # 是否为首次联系
@@ -451,22 +447,8 @@ class BankDataPreprocessor:
         self.processed_data['y_encoded'] = target_le.fit_transform(self.processed_data['y'])
         self.label_encoders['y'] = target_le
 
-    def data_preprocessing(self):
-        # 数据清洗
-        self.clean_data()
-
-        # 特征聚合
-        self._data_aggregation()
-        # 特征生成
-        self._feature_generation()
-        # 数据离散化
-        self._data_discretization()
-        # 特征编码
-        self._data_encode()
-        # 采样
-        self._data_sampling()
-
-        X, y = self.prepare_features(use_onehot=False, scale_features=True)
+    # 数据标准化，划分为训练集和测试集，使用训练集的scaler标准化测试集
+    def _data_normalize(self, X, y):
         # 特征缩放
         print("进行特征缩放...")
         X_train, X_test, y_train, y_test = train_test_split(
@@ -482,62 +464,86 @@ class BankDataPreprocessor:
         print(f"测试集形状: {X_test.shape}")
         print(f"训练集订阅率: {y_train.mean():.3f}")
         print(f"测试集订阅率: {y_test.mean():.3f}")
-        
-        print(f"特征工程完成！最终数据形状: {self.processed_data.shape}")
-        return self.processed_data, X_train, X_test, y_train, y_test
-    
-    def prepare_features(self, use_onehot=False, scale_features=True):
+
+        return X_train, X_test, y_train, y_test
+
+    # 特征选择
+    def _feature_selection(self, use_onehot=False, scale_features=True):
         """准备建模特征"""
         if self.processed_data is None:
             print("请先进行特征工程！")
             return None, None
-            
+
         print("\n准备建模特征...")
-        
+
         # 选择特征
         if use_onehot:
             # 使用独热编码特征
             feature_columns = []
-            
+
             # 数值特征
-            numeric_features = ['age', 'balance', 'duration', 'campaign', 'previous', 
-                              'contact_efficiency', 'first_contact']
+            numeric_features = ['age', 'balance', 'duration', 'campaign', 'previous',
+                                'contact_efficiency', 'first_contact']
             feature_columns.extend(numeric_features)
-            
+
             # 独热编码特征
-            onehot_columns = [col for col in self.processed_data.columns 
-                            if any(col.startswith(prefix) for prefix in 
-                                  ['job_', 'marital_', 'education_', 'contact_', 'month_', 'poutcome_',
-                                   'balance_group_', 'duration_group_'])]
+            onehot_columns = [col for col in self.processed_data.columns
+                              if any(col.startswith(prefix) for prefix in
+                                     ['job_', 'marital_', 'education_', 'contact_', 'month_', 'poutcome_',
+                                      'balance_group_', 'duration_group_'])]
             feature_columns.extend(onehot_columns)
-            
+
             # 二元特征
             binary_features = ['default_encoded', 'housing_encoded', 'loan_encoded']
-            feature_columns.extend([col for col in binary_features 
-                                  if col in self.processed_data.columns])
-            
+            feature_columns.extend([col for col in binary_features
+                                    if col in self.processed_data.columns])
+
         else:
             # 使用标签编码特征
             feature_columns = ['age', 'job_encoded', 'marital_encoded', 'education_encoded',
-                             'default_encoded', 'balance', 'housing_encoded', 'loan_encoded',
-                             'contact_encoded', 'duration', 'campaign', 'previous',
-                             'poutcome_encoded', 'contact_efficiency', 'first_contact',
-                             'balance_group_encoded', 'duration_group_encoded']
-            
+                               'default_encoded', 'balance', 'housing_encoded', 'loan_encoded',
+                               'contact_encoded', 'duration', 'campaign', 'previous',
+                               'poutcome_encoded', 'contact_efficiency', 'first_contact',
+                               'balance_group_encoded', 'duration_group_encoded']
+
             # 过滤存在的列
-            feature_columns = [col for col in feature_columns 
-                             if col in self.processed_data.columns]
-        
+            feature_columns = [col for col in feature_columns
+                               if col in self.processed_data.columns]
+
         # 提取特征和目标变量
         X = self.processed_data[feature_columns]
         y = self.processed_data['y_encoded']
-        
+
         self.feature_names = feature_columns
-        
+
         print(f"最终特征数量: {len(feature_columns)}")
         print(f"特征列表: {feature_columns[:10]}...")  # 显示前10个特征
-        
+
         return X, y
+
+    def data_preprocessing(self):
+        # 数据清洗
+        self.clean_data()
+
+        # 特征聚合
+        self._data_aggregation()
+        # 特征生成
+        self._feature_generation()
+        # 数据离散化
+        self._data_discretization()
+        # 特征编码
+        self._data_encode()
+        # 采样
+        self._data_sampling()
+
+        # 特征选择
+        X, y = self._feature_selection(use_onehot=False, scale_features=True)
+
+        # 数据集划分&数据标准化
+        X_train, X_test, y_train, y_test = self._data_normalize(X, y)
+        
+        print(f"特征工程完成！最终数据形状: {self.processed_data.shape}")
+        return self.processed_data, X_train, X_test, y_train, y_test
     
     def save_processed_data(self, output_path="processed_bank_data.csv"):
         """保存处理后的数据"""
